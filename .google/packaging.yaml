@@ -9,4 +9,12 @@ categories:   [RenderScript]
 languages:    [Java]
 solutions:    [Mobile]
 github:       android-RenderScriptIntrinsic
+level:        EXPERT
+icon:         screenshots/icon-web.png
+apiRefs:
+    - android:android.renderscript.RenderScript
+    - android:android.renderscript.ScriptIntrinsicBlur
+    - android:android.renderscript.ScriptIntrinsicConvolve5x5
+    - android:android.renderscript.ScriptIntrinsicColorMatrix
+    - android:
 license: apache2
