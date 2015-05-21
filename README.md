@@ -1,3 +1,4 @@
+
 Android RenderScriptIntrinsic Sample
 ===================================
 
