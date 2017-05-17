@@ -16,25 +16,32 @@
 
 package com.example.android.renderscriptintrinsic;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.support.v8.renderscript.Allocation;
+import android.support.v8.renderscript.Element;
+import android.support.v8.renderscript.Matrix3f;
+import android.support.v8.renderscript.RenderScript;
+import android.support.v8.renderscript.ScriptIntrinsicBlur;
+import android.support.v8.renderscript.ScriptIntrinsicColorMatrix;
+import android.support.v8.renderscript.ScriptIntrinsicConvolve5x5;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
-import android.support.v8.renderscript.*;
 
-public class MainActivity extends Activity {
-    /* Number of bitmaps that is used for renderScript thread and UI thread synchronization.
-       Ideally, this can be reduced to 2, however in some devices, 2 buffers still showing tierings on UI.
-       Investigating a root cause.
+public class MainActivity extends AppCompatActivity {
+
+    /**
+     * Number of bitmaps that is used for renderScript thread and UI thread synchronization.
      */
-    private final int NUM_BITMAPS = 3;
+    private final int NUM_BITMAPS = 2;
     private int mCurrentBitmap = 0;
     private Bitmap mBitmapIn;
     private Bitmap[] mBitmapsOut;
@@ -59,14 +66,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.main_layout);
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
-        /*
-         * Initialize UI
-         */
-
-        //Set up main image view
+        // Set up main image view
         mBitmapIn = loadBitmap(R.drawable.data);
         mBitmapsOut = new Bitmap[NUM_BITMAPS];
         for (int i = 0; i < NUM_BITMAPS; ++i) {
@@ -131,20 +134,13 @@ public class MainActivity extends Activity {
             }
         });
 
-        /*
-         * Create renderScript
-         */
+        // Create renderScript
         createScript();
 
-        /*
-         * Create thumbnails
-         */
+        // Create thumbnails
         createThumbnail();
 
-
-        /*
-         * Invoke renderScript kernel and update imageView
-         */
+        // Invoke renderScript kernel and update imageView
         mFilterMode = MODE_BLUR;
         updateImage(50);
     }
@@ -159,12 +155,10 @@ public class MainActivity extends Activity {
             mOutAllocations[i] = Allocation.createFromBitmap(mRS, mBitmapsOut[i]);
         }
 
-        /*
-        Create intrinsics.
-        RenderScript has built-in features such as blur, convolve filter etc.
-        These intrinsics are handy for specific operations without writing RenderScript kernel.
-        In the sample, it's creating blur, convolve and matrix intrinsics.
-         */
+        // Create intrinsics.
+        // RenderScript has built-in features such as blur, convolve filter etc.
+        // These intrinsics are handy for specific operations without writing RenderScript kernel.
+        // In the sample, it's creating blur, convolve and matrix intrinsics.
 
         mScriptBlur = ScriptIntrinsicBlur.create(mRS, Element.U8_4(mRS));
         mScriptConvolve = ScriptIntrinsicConvolve5x5.create(mRS,
@@ -177,18 +171,15 @@ public class MainActivity extends Activity {
                                Allocation outAllocation, Bitmap bitmapOut, float value) {
         switch (mFilterMode) {
             case MODE_BLUR:
-            /*
-             * Set blur kernel size
-             */
+                // Set blur kernel size
                 mScriptBlur.setRadius(value);
 
-            /*
-             * Invoke filter kernel
-             */
+                // Invoke filter kernel
                 mScriptBlur.setInput(inAllocation);
                 mScriptBlur.forEach(outAllocation);
                 break;
             case MODE_CONVOLVE: {
+                @SuppressWarnings("UnnecessaryLocalVariable")
                 float f1 = value;
                 float f2 = 1.0f - f1;
 
@@ -196,24 +187,18 @@ public class MainActivity extends Activity {
                 float coefficients[] = {-f1 * 2, 0, -f1, 0, 0, 0, -f2 * 2, -f2, 0,
                         0, -f1, -f2, 1, f2, f1, 0, 0, f2, f2 * 2, 0, 0, 0, f1, 0,
                         f1 * 2,};
-            /*
-             * Set kernel parameter
-             */
+                // Set kernel parameter
                 mScriptConvolve.setCoefficients(coefficients);
 
-            /*
-             * Invoke filter kernel
-             */
+                // Invoke filter kernel
                 mScriptConvolve.setInput(inAllocation);
                 mScriptConvolve.forEach(outAllocation);
                 break;
             }
             case MODE_COLORMATRIX: {
-            /*
-             * Set HUE rotation matrix
-             * The matrix below performs a combined operation of,
-             * RGB->HSV transform * HUE rotation * HSV->RGB transform
-             */
+                // Set HUE rotation matrix
+                // The matrix below performs a combined operation of,
+                // RGB->HSV transform * HUE rotation * HSV->RGB transform
                 float cos = (float) Math.cos((double) value);
                 float sin = (float) Math.sin((double) value);
                 Matrix3f mat = new Matrix3f();
@@ -228,23 +213,19 @@ public class MainActivity extends Activity {
                 mat.set(2, 2, (float) (.114 + .886 * cos - .203 * sin));
                 mScriptMatrix.setColorMatrix(mat);
 
-            /*
-             * Invoke filter kernel
-             */
+                // Invoke filter kernel
                 mScriptMatrix.forEach(inAllocation, outAllocation);
             }
             break;
         }
 
-        /*
-         * Copy to bitmap and invalidate image view
-         */
+        // Copy to bitmap and invalidate image view
         outAllocation.copyTo(bitmapOut);
     }
 
-    /*
-    Convert seekBar progress parameter (0-100 in range) to parameter for each intrinsic filter.
-    (e.g. 1.0-25.0 in Blur filter)
+    /**
+     * Convert seekBar progress parameter (0-100 in range) to parameter for each intrinsic filter.
+     * (e.g. 1.0-25.0 in Blur filter)
      */
     private float getFilterParameter(int i) {
         float f = 0.f;
@@ -269,21 +250,24 @@ public class MainActivity extends Activity {
             break;
         }
         return f;
-
     }
 
-    /*
+    /**
      * In the AsyncTask, it invokes RenderScript intrinsics to do a filtering.
-     * After the filtering is done, an operation blocks at Allication.copyTo() in AsyncTask thread.
-     * Once all operation is finished at onPostExecute() in UI thread, it can invalidate and update ImageView UI.
+     *
+     * <p>After the filtering is done, an operation blocks at Allocation.copyTo() in AsyncTask
+     * thread. Once all operation is finished at onPostExecute() in UI thread, it can invalidate
+     * and
+     * update ImageView UI.</p>
      */
     private class RenderScriptTask extends AsyncTask<Float, Integer, Integer> {
-        Boolean issued = false;
+
+        private boolean mIssued;
 
         protected Integer doInBackground(Float... values) {
             int index = -1;
-            if (isCancelled() == false) {
-                issued = true;
+            if (!isCancelled()) {
+                mIssued = true;
                 index = mCurrentBitmap;
 
                 performFilter(mInAllocation, mOutAllocations[index], mBitmapsOut[index], values[0]);
@@ -305,16 +289,17 @@ public class MainActivity extends Activity {
         }
 
         protected void onCancelled(Integer result) {
-            if (issued) {
+            if (mIssued) {
                 updateView(result);
             }
         }
     }
 
-    /*
-    Invoke AsynchTask and cancel previous task.
-    When AsyncTasks are piled up (typically in slow device with heavy kernel),
-    Only the latest (and already started) task invokes RenderScript operation.
+    /**
+     * Invoke AsyncTask and cancel previous task.
+     *
+     * <p>When AsyncTasks are piled up (typically in slow device with heavy kernel),
+     * Only the latest (and already started) task invokes RenderScript operation.</p>
      */
     private void updateImage(int progress) {
         float f = getFilterParameter(progress);
@@ -326,8 +311,8 @@ public class MainActivity extends Activity {
         mLatestTask.execute(f);
     }
 
-    /*
-    Helper to load Bitmap from resource
+    /**
+     * Helper to load Bitmap from resource
      */
     private Bitmap loadBitmap(int resource) {
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -335,9 +320,9 @@ public class MainActivity extends Activity {
         return BitmapFactory.decodeResource(getResources(), resource, options);
     }
 
-    /*
-    Create thumbNail for UI. It invokes RenderScript kernel synchronously in UI-thread,
-    which is OK for small thumbnail (but not ideal).
+    /**
+     * Create thumbNail for UI. It invokes RenderScript kernel synchronously in UI-thread,
+     * which is OK for small thumbnail (but not ideal).
      */
     private void createThumbnail() {
         int width = 72;
@@ -346,11 +331,11 @@ public class MainActivity extends Activity {
         int pixelsWidth = (int) (width * scale + 0.5f);
         int pixelsHeight = (int) (height * scale + 0.5f);
 
-        //Temporary image
+        // Temporary image
         Bitmap tempBitmap = Bitmap.createScaledBitmap(mBitmapIn, pixelsWidth, pixelsHeight, false);
         Allocation inAllocation = Allocation.createFromBitmap(mRS, tempBitmap);
 
-        //Create thumbnail with each RS intrinsic and set it to radio buttons
+        // Create thumbnail with each RS intrinsic and set it to radio buttons
         int[] modes = {MODE_BLUR, MODE_CONVOLVE, MODE_COLORMATRIX};
         int[] ids = {R.id.radio0, R.id.radio1, R.id.radio2};
         int[] parameter = {50, 100, 25};
@@ -358,13 +343,13 @@ public class MainActivity extends Activity {
             mFilterMode = mode;
             float f = getFilterParameter(parameter[mode]);
 
-            Bitmap destBitpmap = Bitmap.createBitmap(tempBitmap.getWidth(),
+            Bitmap destBitmap = Bitmap.createBitmap(tempBitmap.getWidth(),
                     tempBitmap.getHeight(), tempBitmap.getConfig());
-            Allocation outAllocation = Allocation.createFromBitmap(mRS, destBitpmap);
-            performFilter(inAllocation, outAllocation, destBitpmap, f);
+            Allocation outAllocation = Allocation.createFromBitmap(mRS, destBitmap);
+            performFilter(inAllocation, outAllocation, destBitmap, f);
 
             ThumbnailRadioButton button = (ThumbnailRadioButton) findViewById(ids[mode]);
-            button.setThumbnail(destBitpmap);
+            button.setThumbnail(destBitmap);
         }
     }
 }

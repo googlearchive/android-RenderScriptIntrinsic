@@ -17,5 +17,4 @@ apiRefs:
     - android:android.renderscript.ScriptIntrinsicBlur
     - android:android.renderscript.ScriptIntrinsicConvolve5x5
     - android:android.renderscript.ScriptIntrinsicColorMatrix
-    - android:
 license: apache2

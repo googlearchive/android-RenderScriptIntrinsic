@@ -16,6 +16,7 @@
 
 package com.example.android.renderscriptintrinsic;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -26,16 +27,17 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.os.Build;
+import android.util.AttributeSet;
 import android.view.Gravity;
 import android.widget.RadioButton;
-import android.content.Context;
-import android.util.AttributeSet;
 
-/*
- A button with Thumbnail which extends Radio Button.
- The widget override a background drawable of Radio Button with a StateList Drawable.
- Each state has a LayerDrawable with a Thumbnail image and a Focus rectangle.
- It's using original Radio Buttons text as a label, because LayerDrawable showed some issues with Canvas.drawText().
+/**
+ * A button with Thumbnail which extends Radio Button.
+ *
+ * <p>The widget override a background drawable of Radio Button with a StateList Drawable. Each
+ * state has a LayerDrawable with a Thumbnail image and a Focus rectangle. It's using original
+ * Radio Buttons text as a label, because LayerDrawable showed some issues with
+ * Canvas.drawText().</p>
  */
 public class ThumbnailRadioButton extends RadioButton {
     public ThumbnailRadioButton(Context context) {
@@ -58,12 +60,12 @@ public class ThumbnailRadioButton extends RadioButton {
     }
 
     public void setThumbnail(Bitmap bitmap) {
-        //Bitmap drawable
+        // Bitmap drawable
         BitmapDrawable bmp = new BitmapDrawable(getResources(), bitmap);
         bmp.setGravity(Gravity.CENTER);
 
         int strokeWidth = 24;
-        //Checked state
+        // Checked state
         ShapeDrawable rectChecked = new ShapeDrawable(new RectShape());
         rectChecked.getPaint().setColor(0xFFFFFFFF);
         rectChecked.getPaint().setStyle(Paint.Style.STROKE);
@@ -73,7 +75,7 @@ public class ThumbnailRadioButton extends RadioButton {
         Drawable drawableArray[] = new Drawable[]{bmp, rectChecked};
         LayerDrawable layerChecked = new LayerDrawable(drawableArray);
 
-        //Unchecked state
+        // Unchecked state
         ShapeDrawable rectUnchecked = new ShapeDrawable(new RectShape());
         rectUnchecked.getPaint().setColor(0x0);
         rectUnchecked.getPaint().setStyle(Paint.Style.STROKE);
@@ -83,17 +85,19 @@ public class ThumbnailRadioButton extends RadioButton {
         Drawable drawableArray2[] = new Drawable[]{bmp, rectUnchecked};
         LayerDrawable layerUnchecked = new LayerDrawable(drawableArray2);
 
-        //Statelist drawable
+        // StateList drawable
         StateListDrawable states = new StateListDrawable();
         states.addState(new int[]{android.R.attr.state_checked},
                 layerChecked);
         states.addState(new int[]{},
                 layerUnchecked);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
             setBackground(states);
-        else
+        } else {
+            //noinspection deprecation
             setBackgroundDrawable(states);
+        }
 
         //Offset text to center/bottom of the checkbox
         Paint paint = new Paint();
